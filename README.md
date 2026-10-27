@@ -1,34 +1,35 @@
 # 寶貝的戀愛補給站
 
-手機優先、無建置依賴的互動前端。可直接開啟 dist/index.html；建議在此目錄以 `python -m http.server 4173 --directory dist` 啟動，再開啟 http://localhost:4173。
+手機版情侶互動 PWA。男友、女友各自登入，看到各自的畫面，資料透過 Supabase 即時同步。前端無建置步驟，`dist/` 就是整個網站。
 
-包含首頁、16 種券、票夾、兌換申請、每週抽獎、情書、許願與回覆、心情、含照片的回憶、三類情侶遊戲及展示後台。資料存在 localStorage；無登入、跨裝置同步、訊息發送或真正交易。後台無權限隔離。
+| | 女友登入 | 男友登入 |
+|---|---|---|
+| 頁面 | 首頁、兌換券／票夾、每週抽獎、情書、許願池、心情、回憶、小遊戲 | 首頁、男友後台、情書、回憶、小遊戲 |
+| 能做的事 | 抽獎（每週一次）、兌換券、許願、記錄心情 | 送券、完成兌換、回覆願望、看她的心情、設定暱稱與紀念日 |
+| 兩人都能 | 寫情書、貼回憶照片 | |
 
-## 來源與暫定內容
-重用原對話取回的粉紅甜點券圖片（dist/assets/dessert.webp，已由 2.6 MB 的 PNG 壓縮為約 90 KB），及使用者確認的站名、風格、署名、甜點／飲料／宵夜券。原對話的助手規劃只回傳引用標記，無法取回正文；其餘券種、文案與細部流程為本次補齊的展示版本，不宣稱逐字重現原規劃。
+本機預覽：`python -m http.server 4173 --directory dist`，開 http://localhost:4173。
 
-## 後端接口
-在 dist/app.js 替換 window.loveApi，保留 getWeeklyStatus 與 drawWeekly。正式環境由伺服器計算 Asia/Taipei 週一 00:00 的週期與 nextDrawAt，前端不得決定獎品或可信時間。
+## Supabase 設定（第一次）
+1. 到 https://supabase.com 註冊並按 **New project**（區域選 Tokyo 或 Singapore 比較快）。
+2. 左側 **SQL Editor** → 貼上 `supabase/schema.sql` 全部內容 → **Run**。
+3. **Authentication → Sign In / Providers**：關掉 **Allow new users to sign up**，只讓你們兩個人能登入。
+4. **Authentication → Users → Add user → Create new user**，建立兩個帳號（男友、女友），勾選 **Auto Confirm User**。email 可以用真的，忘記密碼時比較好處理。
+5. 回到 **SQL Editor**，執行 `schema.sql` 最下面「綁定情侶」那段（把兩個 email 換成剛剛建立的），只執行一次。
+6. **Project Settings → API**（或 API Keys）複製 **Project URL** 和 **anon public／Publishable key**，連同兩個 email 填進 `dist/config.js`。
+   **不要**用 service_role／Secret key，那把鑰匙可以略過所有權限。
 
-- GET /api/weekly-draw：回傳 eligible、nextDrawAt。
-- POST /api/weekly-draw：帶登入憑證及 Idempotency-Key。回傳 couponId、issuedCouponId、weekStart、nextDrawAt；已抽過回傳 409。
-- 在同一筆資料庫交易內新增抽獎紀錄與使用者券；對 couple_id + user_id + week_start 建立唯一索引。隨機抽取 16 種券，各 1/16。重試相同冪等鍵須回傳原結果。
-- 券狀態 available → pending → done；伺服器必須驗證所有權、角色與合法狀態轉換，拒絕重複兌換。情書、願望、心情與回憶必須依 couple_id 隔離。
-- 示範採本機鎖與 localStorage 協調同瀏覽器分頁，但清除儲存、更改時間、換裝置均可繞過，不能當正式防重複抽獎機制。
-
-建議資料表：couples、users、coupon_types、issued_coupons、weekly_draws、redemptions、letters、wishes、mood_entries、memories。照片上傳正式環境應使用有權限控管的儲存空間。
-
-Google Fonts 連線失敗時會使用系統中文字體；圖片與其他前端資源皆隨附在 dist。
-
-介面只提供手機版：最大內容寬度 480px，寬螢幕置中顯示相同手機介面，無桌面側邊欄。
+## 安全設計
+- anon 金鑰本來就公開在網頁裡；保護資料的是 `schema.sql` 的權限規則（RLS）：只看得到自己這對情侶的資料。
+- 抽獎、兌換、完成兌換、送券、回覆願望、修改設定，都由資料庫函式執行並檢查角色：女友不能進後台送自己券，男友不能替她抽獎。
+- 每週抽獎由伺服器決定獎品，用台北時間週一 00:00 計算週期，資料庫唯一索引保證每週一次。
+- 回憶照片存在私人儲存空間（`memories` bucket），用一小時有效的簽名網址顯示。
 
 ## 加到手機桌面（PWA）
-需透過 http(s) 開啟（直接雙擊 index.html 不會啟用）。上線請用 HTTPS（GitHub Pages、Netlify 等皆可）；localhost 也可測試。
-
+需透過 HTTPS 開啟（localhost 也可測試）。
 - Android Chrome：首頁會出現「加到桌面」按鈕，或用選單的「安裝應用程式」。
-- iPhone：用 Safari 開啟 → 分享 → 加入主畫面（首頁會顯示提示）。
-- 離線可開啟：sw.js 會快取所有前端檔案與字型。**每次修改任何檔案後，請把 sw.js 裡的 `CACHE` 版本號加一**，手機才會換成新版（第二次開啟時生效）。
-- 圖示：assets/icon-192.png、icon-512.png、icon-maskable-512.png（Android 自適應形狀）、apple-touch-icon.png，由甜點券插圖中央裁切而成。
+- iPhone：用 Safari 開啟 → 分享 → 加入主畫面（首頁會顯示提示）。iPhone 桌面上的 App 和 Safari 是分開的，第一次打開 App 要再登入一次。
+- sw.js 採「有網路就拿最新版，沒網路才用快取」。新增或改名檔案時，記得更新 sw.js 的 `SHELL` 清單和 `CACHE` 版本號。
 
 ## 線上網址與更新
 網站：https://ands94578-cloud.github.io/love-station/ （GitHub Pages，來源為 gh-pages 分支，內容即 dist/）
@@ -36,4 +37,13 @@ Google Fonts 連線失敗時會使用系統中文字體；圖片與其他前端�
 修改後更新上線：
 1. 把 dist/sw.js 的 `CACHE` 版本號加一。
 2. `git commit -am "說明"` 後執行 `git push` 與 `git subtree push --prefix dist origin gh-pages`。
-3. 約 1 分鐘後生效；手機第二次開啟時換成新版。
+3. 約 1 分鐘後生效。
+
+## 檔案
+- `dist/config.js`：Supabase 連線設定
+- `dist/app.js`：畫面與流程；所有資料讀寫都經過 `window.loveApi`
+- `dist/vendor/supabase.js`：Supabase 官方 JS 套件 2.117.3（MIT 授權，見 supabase-LICENSE）
+- `supabase/schema.sql`：資料表、權限、伺服器函式、照片儲存空間
+
+## 來源
+粉紅甜點券插圖（dist/assets/dessert.webp）與站名、風格、署名、甜點／飲料／宵夜券來自原始對話；其餘券種與文案為補齊的版本。圖上「兌換卷」的「卷」是錯字，正確為「券」，需重新生成圖片才能修正。
