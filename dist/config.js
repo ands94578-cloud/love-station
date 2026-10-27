@@ -3,5 +3,5 @@
 // 千萬不要把 Secret key（service_role）放進來。登入 email 也不要寫在這裡：這個儲存庫是公開的。
 window.LOVE_CONFIG={
   supabaseUrl:'https://nhbsscoxtgqaekrvvvzy.supabase.co',
-  supabaseAnonKey:'sb_publishable_3g96LbV4Y6WV3DpT3RODqw_4URY_xjd'
+  supabaseAnonKey:'sb_publishable_VicuEgs9Vwk3xar3qJL54g_2Yo_lUh_'
 };
