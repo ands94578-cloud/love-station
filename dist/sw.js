@@ -1,7 +1,7 @@
 // Bump CACHE whenever any file below changes so phones pick up the new version.
-const CACHE='love-station-v5';
+const CACHE='love-station-v6-atelier';
 const FONTS='love-station-fonts';
-const SHELL=['./','index.html','style.css','app.js','config.js','vendor/supabase.js','manifest.webmanifest','assets/dessert.webp','assets/icon-192.png','assets/icon-512.png','assets/icon-maskable-512.png','assets/apple-touch-icon.png'];
+const SHELL=['./','index.html','style.css','atelier.css','assets/coupon-reference.png','app.js','config.js','vendor/supabase.js','manifest.webmanifest','assets/dessert.webp','assets/icon-192.png','assets/icon-512.png','assets/icon-maskable-512.png','assets/apple-touch-icon.png'];
 
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k!==FONTS).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
