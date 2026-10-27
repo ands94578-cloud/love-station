@@ -131,7 +131,8 @@ function updateCountdown(){const el=$('#countdown');if(!el)return;const sec=Math
 async function act(fn,msg){try{await fn();await refresh(false);if(msg)toast(msg);return true}catch(e){toast(errMsg(e));refreshSoon();return false}}
 
 document.addEventListener('change',e=>{if(e.target.name==='role'&&e.target.form?.id==='loginForm'){loginRole=e.target.value;e.target.form.elements.username.value=savedEmail(loginRole)}});
-document.addEventListener('click',async e=>{const el=e.target.closest('button,[data-page]');if(!el)return;const d=el.dataset;
+document.addEventListener('click',async e=>{// <body> also carries data-page (for page-specific styles); only real links/buttons navigate.
+  const el=e.target.closest('button,[data-page]:not(body)');if(!el)return;const d=el.dataset;
   if(d.logout!==undefined){await window.loveApi.signOut();return}
   if(!state?.profile)return;
   if(d.page){if(d.page==='shop'&&el.classList.contains('wallet'))shopMode='wallet';location.hash=d.page;if(page===d.page)render()}
