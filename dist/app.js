@@ -15,7 +15,7 @@ function makeSupabaseApi(){
   return {
     async session(){return ok(await sb.auth.getSession()).session},
     onAuthChange(cb){sb.auth.onAuthStateChange((ev,s)=>cb(s))},
-    async signIn(role,password){ok(await sb.auth.signInWithPassword({email:cfg.emails?.[role],password}))},
+    async signIn(email,password){ok(await sb.auth.signInWithPassword({email,password}))},
     async signOut(){await sb.auth.signOut()},
     async load(userId){
       const profile=ok(await sb.from('profiles').select('*').eq('id',userId).maybeSingle());
@@ -38,7 +38,10 @@ function makeSupabaseApi(){
 }
 window.loveApi=window.loveApi||makeSupabaseApi();
 
-let session=null,state=null,page='home',filter='全部',shopMode='catalog',moodSelected='開心',gameType='真心話',busy=false,loginRole='girlfriend';
+// Login emails stay on this phone only, never in the public source.
+const savedEmail=r=>{try{return localStorage.getItem('love-station-email-'+r)||''}catch{return ''}};
+const saveEmail=(r,v)=>{try{localStorage.setItem('love-station-email-'+r,v)}catch{}};
+let session=null,state=null,page='home',filter='全部',shopMode='catalog',moodSelected='開心',gameType='真心話',busy=false,loginRole=savedEmail('last-role')==='boyfriend'?'boyfriend':'girlfriend';
 const role=()=>state?.profile?.role;
 const me=()=>ROLE[role()];
 const fromName=r=>r==='boyfriend'?ROLE.boyfriend.from:(state.couple.nickname||'寶貝');
@@ -67,8 +70,8 @@ function restoreForms(k){for(const [key,vals] of k.forms){const f=[...document.q
 
 // ── 登入前的畫面 ───────────────────────────────────────────────
 function gate(html){document.body.classList.add('signed-out');$('.demo').textContent='♡ 寶貝的戀愛補給站 · 只屬於我們兩個人';$('#nav').innerHTML='';$('#app').innerHTML=html}
-function setupScreen(){gate(pageHeading('ALMOST THERE','補給站還差一步。','還沒連上資料庫，所以先不能登入。')+'<div class="card"><p>請照 README 的「Supabase 設定」建立專案，再把專案網址、公開金鑰和兩個登入 email 填進 <b>config.js</b>。</p></div>')}
-function loginScreen(){gate(`<section class="login"><img src="assets/dessert.webp" alt="粉紅手繪甜點兌換券"><div class="eyebrow">WELCOME TO OUR LITTLE LOVE CLUB</div><h1>今天是誰來補給呢？</h1><form id="loginForm" class="card form"><div class="role-pick">${[['girlfriend','🎀','我是女友','領券、抽獎、許願'],['boyfriend','🧸','我是男友','送券、回覆、照顧她']].map(([r,i,t,s])=>`<label><input type="radio" name="role" value="${r}" ${loginRole===r?'checked':''}><span><i>${i}</i><b>${t}</b><small>${s}</small></span></label>`).join('')}</div><input type="hidden" name="username" autocomplete="username" value="${esc(cfg.emails?.[loginRole]||'')}"><label>密碼<input type="password" name="password" required autocomplete="current-password" placeholder="輸入我們的小密碼"></label><button class="primary">登入補給站 ♡</button><span class="small">登入一次會記住，下次打開就不用再輸入。</span></form></section>`)}
+function setupScreen(){gate(pageHeading('ALMOST THERE','補給站還差一步。','還沒連上資料庫，所以先不能登入。')+'<div class="card"><p>請照 README 的「Supabase 設定」建立專案，再把專案網址和公開金鑰填進 <b>config.js</b>。</p></div>')}
+function loginScreen(){gate(`<section class="login"><img src="assets/dessert.webp" alt="粉紅手繪甜點兌換券"><div class="eyebrow">WELCOME TO OUR LITTLE LOVE CLUB</div><h1>今天是誰來補給呢？</h1><form id="loginForm" class="card form"><div class="role-pick">${[['girlfriend','🎀','我是女友','領券、抽獎、許願'],['boyfriend','🧸','我是男友','送券、回覆、照顧她']].map(([r,i,t,s])=>`<label><input type="radio" name="role" value="${r}" ${loginRole===r?'checked':''}><span><i>${i}</i><b>${t}</b><small>${s}</small></span></label>`).join('')}</div><label>Email<input type="email" name="username" required autocomplete="username" inputmode="email" autocapitalize="off" value="${esc(savedEmail(loginRole))}" placeholder="登入用的 email"></label><label>密碼<input type="password" name="password" required autocomplete="current-password" placeholder="輸入我們的小密碼"></label><button class="primary">登入補給站 ♡</button><span class="small">登入一次會記住，下次打開就不用再輸入。email 只存在這支手機。</span></form></section>`)}
 function unboundScreen(){gate(pageHeading('ONE MORE STEP','帳號還沒綁定情侶。','這個帳號已經登入，但資料庫裡還沒設定你是男友還是女友。')+'<div class="card"><p>請在 Supabase 的 SQL Editor 執行 schema.sql 最下面的「綁定情侶」區塊，再重新整理。</p><button data-logout>登出</button></div>')}
 
 // ── 主畫面 ─────────────────────────────────────────────────────
@@ -105,7 +108,7 @@ $('#modal').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;co
 function updateCountdown(){const el=$('#countdown');if(!el)return;const sec=Math.max(0,Math.floor((weekInfo().next-Date.now())/1000));el.textContent=`${Math.floor(sec/86400)} 天 ${String(Math.floor(sec/3600)%24).padStart(2,'0')} : ${String(Math.floor(sec/60)%60).padStart(2,'0')} : ${String(sec%60).padStart(2,'0')}`;if(!busy&&$('#drawButton'))$('#drawButton').disabled=drawnThisWeek()}
 async function act(fn,msg){try{await fn();await refresh(false);if(msg)toast(msg);return true}catch(e){toast(errMsg(e));refreshSoon();return false}}
 
-document.addEventListener('change',e=>{if(e.target.name==='role'&&e.target.form?.id==='loginForm'){loginRole=e.target.value;e.target.form.elements.username.value=cfg.emails?.[loginRole]||''}});
+document.addEventListener('change',e=>{if(e.target.name==='role'&&e.target.form?.id==='loginForm'){loginRole=e.target.value;e.target.form.elements.username.value=savedEmail(loginRole)}});
 document.addEventListener('click',async e=>{const el=e.target.closest('button,[data-page]');if(!el)return;const d=el.dataset;
   if(d.logout!==undefined){await window.loveApi.signOut();return}
   if(!state?.profile)return;
@@ -129,7 +132,7 @@ document.addEventListener('submit',async e=>{e.preventDefault();const f=e.target
   if(Object.entries(data).some(([k,v])=>typeof v==='string'&&f.elements[k]?.required&&!v.trim())){toast('請填入文字，不能只有空白喔。');return}
   const btn=f.querySelector('button:not([type=button])');if(btn?.disabled)return;if(btn)btn.disabled=true;
   try{
-    if(f.id==='loginForm'){try{await window.loveApi.signIn(data.role,data.password)}catch(err){toast(errMsg(err))}return}
+    if(f.id==='loginForm'){const email=data.username.trim().toLowerCase();try{await window.loveApi.signIn(email,data.password);saveEmail(data.role,email);saveEmail('last-role',data.role)}catch(err){toast(errMsg(err))}return}
     const api=window.loveApi,base={couple_id:state.profile.couple_id,author:session.user.id};
     if(f.id==='letterForm')await act(()=>api.insert('letters',{...base,author_role:role(),title:data.title.trim(),body:data.body.trim()}),'情書已經放進情書盒 ♡');
     else if(f.id==='wishForm')await act(()=>api.insert('wishes',{...base,category:data.category,body:data.body.trim()}),'願望已經漂向他了 ✨');

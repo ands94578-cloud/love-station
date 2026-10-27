@@ -212,11 +212,17 @@ drop policy if exists memories_upload on storage.objects;
 create policy memories_upload on storage.objects for insert to authenticated
   with check (bucket_id = 'memories' and (storage.foldername(name))[1] = my_couple()::text);
 
--- ── 綁定情侶（建立兩個使用者之後，只執行這一段一次）───────────
--- 把兩個 email 換成你在 Authentication → Users 建立的帳號，選取下面幾行後按 Run。
+-- ── 綁定情侶（建立兩個使用者之後執行；可重複執行）─────────────
+-- 把兩個 email 換成你在 Authentication → Users 建立的帳號，取消下面的註解後按 Run。
 --
--- with c as (insert into couples (nickname) values ('寶貝') returning id)
--- insert into profiles (id, couple_id, role)
--- select u.id, c.id, case u.email when '男友的email' then 'boyfriend' else 'girlfriend' end
--- from auth.users u, c
--- where u.email in ('男友的email', '女友的email');
+-- do $$ declare bf uuid; gf uuid; c uuid; begin
+--   select id into bf from auth.users where lower(email) = lower('男友的email');
+--   select id into gf from auth.users where lower(email) = lower('女友的email');
+--   if bf is null or gf is null then
+--     raise exception '找不到登入帳號：請先在 Authentication → Users 建立男友和女友兩個帳號，再重新執行這份 SQL';
+--   end if;
+--   select couple_id into c from profiles where id in (bf, gf) limit 1;
+--   if c is null then insert into couples (nickname) values ('寶貝') returning id into c; end if;
+--   insert into profiles (id, couple_id, role) values (bf, c, 'boyfriend'), (gf, c, 'girlfriend')
+--   on conflict (id) do update set couple_id = excluded.couple_id, role = excluded.role;
+-- end $$;

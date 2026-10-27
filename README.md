@@ -15,8 +15,9 @@
 2. 左側 **SQL Editor** → 貼上 `supabase/schema.sql` 全部內容 → **Run**。
 3. **Authentication → Sign In / Providers**：關掉 **Allow new users to sign up**，只讓你們兩個人能登入。
 4. **Authentication → Users → Add user → Create new user**，建立兩個帳號（男友、女友），勾選 **Auto Confirm User**。email 可以用真的，忘記密碼時比較好處理。
-5. 回到 **SQL Editor**，執行 `schema.sql` 最下面「綁定情侶」那段（把兩個 email 換成剛剛建立的），只執行一次。
-6. **Project Settings → API**（或 API Keys）複製 **Project URL** 和 **anon public／Publishable key**，連同兩個 email 填進 `dist/config.js`。
+5. 回到 **SQL Editor**，執行 `schema.sql` 最下面「綁定情侶」那段（把兩個 email 換成剛剛建立的）。
+6. **Project Settings → API**（或 API Keys）複製 **Project URL** 和 **anon public／Publishable key**，填進 `dist/config.js`。
+   登入 email **不要**寫進程式碼（儲存庫是公開的）；第一次登入時輸入，手機會記住。
    **不要**用 service_role／Secret key，那把鑰匙可以略過所有權限。
 
 ## 安全設計
