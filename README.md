@@ -29,3 +29,11 @@ Google Fonts 連線失敗時會使用系統中文字體；圖片與其他前端�
 - iPhone：用 Safari 開啟 → 分享 → 加入主畫面（首頁會顯示提示）。
 - 離線可開啟：sw.js 會快取所有前端檔案與字型。**每次修改任何檔案後，請把 sw.js 裡的 `CACHE` 版本號加一**，手機才會換成新版（第二次開啟時生效）。
 - 圖示：assets/icon-192.png、icon-512.png、icon-maskable-512.png（Android 自適應形狀）、apple-touch-icon.png，由甜點券插圖中央裁切而成。
+
+## 線上網址與更新
+網站：https://ands94578-cloud.github.io/love-station/ （GitHub Pages，來源為 gh-pages 分支，內容即 dist/）
+
+修改後更新上線：
+1. 把 dist/sw.js 的 `CACHE` 版本號加一。
+2. `git commit -am "說明"` 後執行 `git push` 與 `git subtree push --prefix dist origin gh-pages`。
+3. 約 1 分鐘後生效；手機第二次開啟時換成新版。
