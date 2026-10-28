@@ -20,3 +20,6 @@ dialog{border:2px solid #e0b4ad;outline:5px solid #fff7ed;border-radius:23px 19p
 @media(prefers-reduced-motion:reduce){button,.role-pick span{transition:none}.shaking,.confetti,dialog .prize{animation:none!important}}
 
 .login>img{mix-blend-mode:multiply}dialog:has(.theme-honey) h2{color:#986232}dialog:has(.theme-lilac) h2{color:#77649b}dialog:has(.theme-sage) h2{color:#657d58}
+
+/* Complete hand-painted coupon artwork; retain the full printed edges. */
+.ticket-art .coupon-illustration,.modal-coupon .coupon-illustration{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;border-radius:12px}
