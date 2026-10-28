@@ -44,3 +44,9 @@ body.signed-out aside,body.signed-out header .wallet{display:none}
 .role-pick small{font-size:10px;color:var(--muted)}
 .role-pick input:checked+span{border-color:var(--pink);background:#f9e3e3;box-shadow:0 0 0 2px #c96e7c33}
 .role-pick input:focus-visible+span{outline:2px solid var(--pink);outline-offset:2px}
+/* 通知：選單紅點與「新的小驚喜」視窗 */
+nav a{position:relative}
+nav a .badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#d4566e;color:#fff;font-size:10px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px #fffaf2;margin-left:2px}
+.notice-list{display:grid;gap:8px;margin:14px 0 16px;text-align:left}
+.notice-item{display:flex;gap:10px;align-items:flex-start;width:100%;margin:0;padding:12px 14px;border-radius:14px;background:#fff6f2;border:1px solid #efcfc9;text-align:left;font-size:13px;line-height:1.55;min-height:0}
+.notice-item span:first-child{font-size:18px;line-height:1.2;flex-shrink:0}

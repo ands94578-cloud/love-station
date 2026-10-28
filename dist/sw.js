@@ -1,5 +1,5 @@
 // Bump CACHE whenever any file below changes so phones pick up the new version.
-const CACHE='love-station-v8-illustrated-coupons';
+const CACHE='love-station-v9-notices';
 const FONTS='love-station-fonts';
 const SHELL=['./','index.html','style.css','atelier.css','assets/coupon-reference.png','app.js','config.js','vendor/supabase.js','manifest.webmanifest','assets/dessert.webp','assets/icon-192.png','assets/icon-512.png','assets/icon-maskable-512.png','assets/apple-touch-icon.png'];
 

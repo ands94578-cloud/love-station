@@ -58,8 +58,29 @@ function errMsg(e){const m=String(e?.message||e);
   if(m.includes('Failed to fetch')||m.includes('NetworkError'))return '連不上網路，等一下再試。';
   return '出了點小狀況：'+m}
 
-async function refresh(keep=true){if(!session)return;state=await window.loveApi.load(session.user.id);render(keep)}
-let refreshTimer;const refreshSoon=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>refresh().catch(()=>{}),300)};
+async function refresh(keep=true,asModal=false){if(!session)return;state=await window.loveApi.load(session.user.id);const fresh=takeUnnotified();render(keep);if(!fresh.length)return;if(asModal&&!busy&&!$('#modal').open)notifyModal(fresh);else toast(fresh.length===1?fresh[0].icon+' '+fresh[0].text:`💝 有 ${fresh.length} 個新的小驚喜，看看選單上的紅點`)}
+let refreshTimer;const refreshSoon=(asModal=false)=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>refresh(true,asModal).catch(()=>{}),300)};
+
+// ── 通知：另一半的新動作。seen = 已經點進那一頁看過；notified = 已經跳過通知 ──
+const readKeys=k=>{try{return new Set(JSON.parse(localStorage.getItem(k+session.user.id)||'[]'))}catch{return new Set()}};
+const writeKeys=(k,set)=>{try{localStorage.setItem(k+session.user.id,JSON.stringify([...set].slice(-500)))}catch{}};
+function events(){const mine=session.user.id,they=role()==='boyfriend'?'她':'他',out=[];const add=(key,page,icon,text,ts)=>out.push({key,page,icon,text,ts:ts||''});
+  state.letters.filter(l=>l.author!==mine).forEach(l=>add('letter:'+l.id,'letters','💌',`${they}寫了一封情書給你：「${l.title}」`,l.created_at));
+  state.memories.filter(m=>m.author!==mine).forEach(m=>add('memory:'+m.id,'memories','▧',`${they}收藏了一個回憶：「${m.title}」`,m.created_at));
+  if(role()==='girlfriend'){
+    state.wallet.forEach(w=>{const c=coupons[w.coupon];if(w.source==='男友的小驚喜')add('gift:'+w.id,'shop','🎟️',`他偷偷送你一張${c.name}`,w.created_at);if(w.status==='done')add('done:'+w.id,'shop','✅',`他兌現了你的${c.name} ♡`,w.done_at)});
+    state.wishes.filter(w=>w.reply).forEach(w=>add('reply:'+w.id+':'+w.status+':'+w.reply,'wishes','✧',`他回覆了你的願望（${w.status}）：「${w.reply}」`,w.created_at));
+  }else{
+    state.wallet.filter(w=>w.status==='pending').forEach(w=>add('redeem:'+w.id,'admin','🎟️',`她想兌換${coupons[w.coupon].name}${w.note?'：'+w.note:''}`,w.requested_at));
+    state.draws.filter(d=>d.user_id!==mine).forEach(d=>add('draw:'+d.id,'admin','🎁',`她抽到了${coupons[d.coupon].name}`,d.created_at));
+    state.wishes.forEach(w=>add('wish:'+w.id,'admin','✧',`她許了一個願望：「${w.body}」`,w.created_at));
+    state.moods.forEach(m=>add('mood:'+m.id,'admin','☀',`她今天覺得「${m.mood}」：${m.need}`,m.created_at));
+  }
+  return out.sort((a,b)=>b.ts.localeCompare(a.ts))}
+const unseen=()=>{const s=readKeys('love-station-seen-');return events().filter(e=>!s.has(e.key))};
+function markSeen(p){const s=readKeys('love-station-seen-');let changed=false;for(const e of events())if(e.page===p&&!s.has(e.key)){s.add(e.key);changed=true}if(changed)writeKeys('love-station-seen-',s)}
+function takeUnnotified(){const n=readKeys('love-station-notified-');const fresh=unseen().filter(e=>!n.has(e.key));fresh.forEach(e=>n.add(e.key));if(fresh.length)writeKeys('love-station-notified-',n);return fresh}
+function notifyModal(list){if(!list.length)return;modal(`<span class="eyebrow">WHILE YOU WERE AWAY</span><div class="prize">💝</div><h2>有 ${list.length} 個新的小驚喜</h2><div class="notice-list">${list.slice(0,6).map(e=>`<button class="notice-item" data-page="${e.page}" data-close><span>${e.icon}</span><span>${esc(e.text)}</span></button>`).join('')}</div>${list.length>6?`<p class="small">還有 ${list.length-6} 則，看看選單上的紅點 ♡</p>`:''}<button data-close class="primary">我知道了 ♡</button>`)}
 
 let installEvt=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function installCard(){if(standalone())return '';if(installEvt)return `<div class="banner row between"><span>把補給站放到手機桌面，打開就像 App ♡</span><button id="installApp" class="primary">加到桌面</button></div>`;if(isIOS)return '<div class="banner">♡ 想放到手機桌面嗎？用 Safari 點下方「分享」，再選「加入主畫面」。</div>';return ''}
@@ -83,7 +104,8 @@ function render(keep){
   document.body.classList.remove('signed-out');
   const kept=keep?keepForms():null;const allowed=pages.filter(x=>x[3].includes(me().key));
   page=location.hash.slice(1)||'home';if(!allowed.some(x=>x[0]===page)){page='home';history.replaceState(null,'','#home')}
-  $('#nav').innerHTML=allowed.map(x=>`<a href="#${x[0]}" class="${page===x[0]?'active':''}" ${page===x[0]?'aria-current="page"':''}><span>${x[1]}</span>${x[2]}</a>`).join('');
+  markSeen(page);const unread={};let total=0;for(const e of unseen()){unread[e.page]=(unread[e.page]||0)+1;total++}if(navigator.setAppBadge)(total?navigator.setAppBadge(total):navigator.clearAppBadge()).catch(()=>{});
+  $('#nav').innerHTML=allowed.map(x=>`<a href="#${x[0]}" class="${page===x[0]?'active':''}" ${page===x[0]?'aria-current="page"':''}><span>${x[1]}</span>${x[2]}${unread[x[0]]?`<b class="badge" aria-label="${unread[x[0]]} 則新消息">${unread[x[0]]}</b>`:''}</a>`).join('');
   const w=$('header .wallet');if(role()==='girlfriend'){w.dataset.page='shop';w.firstChild.textContent='我的票夾 ';$('#walletCount').textContent=state.wallet.filter(x=>x.status==='available').length}else{w.dataset.page='admin';w.firstChild.textContent='待兌換 ';$('#walletCount').textContent=state.wallet.filter(x=>x.status==='pending').length}
   $('.demo').innerHTML=`♡ ${me().label}已登入 · 和另一半即時同步 <button data-logout>登出</button>`;
   document.body.dataset.page=page;$('#app').innerHTML=({home,shop,draw,letters,wishes,mood,memories,games,admin})[page]();if(kept)restoreForms(kept);updateCountdown()
@@ -120,7 +142,7 @@ document.addEventListener('click',async e=>{// <body> also carries data-page (fo
   const el=e.target.closest('button,[data-page]:not(body)');if(!el)return;const d=el.dataset;
   if(d.logout!==undefined){await window.loveApi.signOut();return}
   if(!state?.profile)return;
-  if(d.page){if(d.page==='shop'&&el.classList.contains('wallet'))shopMode='wallet';location.hash=d.page;if(page===d.page)render()}
+  if(d.page){if(d.page==='shop'&&(el.classList.contains('wallet')||el.classList.contains('notice-item')))shopMode='wallet';location.hash=d.page;if(page===d.page)render()}
   if(d.shop){shopMode=d.shop;render()}
   if(d.filter){filter=d.filter;render()}
   if(d.close!==undefined)close();
@@ -154,9 +176,9 @@ document.addEventListener('submit',async e=>{e.preventDefault();const f=e.target
   }finally{if(btn?.isConnected)btn.disabled=false}
 });
 
-async function onSession(s){const changed=s?.user?.id!==session?.user?.id;session=s;if(!changed)return;state=null;location.hash='home';render();if(s){try{state=await window.loveApi.load(s.user.id)}catch(err){toast(errMsg(err));state=null;return}render()}}
-async function boot(){if(!window.loveApi)return render();window.loveApi.onAuthChange(onSession);window.loveApi.subscribe(refreshSoon);await onSession(await window.loveApi.session().catch(()=>null));if(!session)render()}
+async function onSession(s){const changed=s?.user?.id!==session?.user?.id;session=s;if(!changed)return;state=null;location.hash='home';render();if(s){try{state=await window.loveApi.load(s.user.id)}catch(err){toast(errMsg(err));state=null;return}render();if(state.profile)notifyModal(takeUnnotified())}}
+async function boot(){if(!window.loveApi)return render();window.loveApi.onAuthChange(onSession);window.loveApi.subscribe(()=>refreshSoon());await onSession(await window.loveApi.session().catch(()=>null));if(!session)render()}
 window.addEventListener('hashchange',()=>{if(state?.profile){render();window.scrollTo({top:0,behavior:'smooth'})}});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSoon()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSoon(true)});
 setInterval(updateCountdown,1000);window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(page==='home'&&state?.profile)render(true)});window.addEventListener('appinstalled',()=>{installEvt=null;if(page==='home'&&state?.profile)render(true)});if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
