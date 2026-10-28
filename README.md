@@ -20,10 +20,19 @@
    登入 email **不要**寫進程式碼（儲存庫是公開的）；第一次登入時輸入，手機會記住。
    **不要**用 service_role／Secret key，那把鑰匙可以略過所有權限。
 
+## 手機推播與情書按讚（第二次設定）
+1. **SQL Editor** → 貼上 `supabase/push.sql` 全部內容 → **Run**（推播地址資料表、情書按讚欄位與函式）。
+2. **Edge Functions → Secrets**：新增 `VAPID_PRIVATE_KEY`，值是推播私密金鑰（**不要**放進這個儲存庫）。公開金鑰已寫在 `dist/config.js`。
+3. **Edge Functions → Deploy a new function → Via Editor**：名稱 `notify-partner`，貼上 `supabase/functions/notify-partner/index.ts`，關掉 **Verify JWT**（函式自己會驗證登入），按 Deploy。
+4. 兩支手機打開補給站 → 首頁按「🔔 開啟通知」。iPhone 需 iOS 16.4 以上，而且要從「加入主畫面」的 App 開。
+- 通知刻意只寫「有新的小驚喜在等你 ♡」，不寫內容，點進去才看得到。
+- 情書只有收信的人能按喜歡；寫信的人會在卡片上看到「他／她很喜歡」和一枚蠟封，也會收到通知。
+
 ## 安全設計
 - anon 金鑰本來就公開在網頁裡；保護資料的是 `schema.sql` 的權限規則（RLS）：只看得到自己這對情侶的資料。
 - 抽獎、兌換、完成兌換、送券、回覆願望、修改設定，都由資料庫函式執行並檢查角色：女友不能進後台送自己券，男友不能替她抽獎。
 - 每週抽獎由伺服器決定獎品，用台北時間週一 00:00 計算週期，資料庫唯一索引保證每週一次。
+- 推播地址只能透過資料庫函式存取，推播函式用呼叫者自己的登入憑證，只拿得到另一半的地址。
 - 回憶照片存在私人儲存空間（`memories` bucket），用一小時有效的簽名網址顯示。
 
 ## 加到手機桌面（PWA）
@@ -45,6 +54,8 @@
 - `dist/app.js`：畫面與流程；所有資料讀寫都經過 `window.loveApi`
 - `dist/vendor/supabase.js`：Supabase 官方 JS 套件 2.117.3（MIT 授權，見 supabase-LICENSE）
 - `supabase/schema.sql`：資料表、權限、伺服器函式、照片儲存空間
+- `supabase/push.sql`：手機推播、情書按讚
+- `supabase/functions/notify-partner/`：發送推播的 Edge Function
 
 ## 來源
 粉紅甜點券插圖（dist/assets/dessert.webp）與站名、風格、署名、甜點／飲料／宵夜券來自原始對話；其餘券種與文案為補齊的版本。圖上「兌換卷」的「卷」是錯字，正確為「券」，需重新生成圖片才能修正。

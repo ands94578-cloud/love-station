@@ -50,3 +50,39 @@ nav a .badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;backgrou
 .notice-list{display:grid;gap:8px;margin:14px 0 16px;text-align:left}
 .notice-item{display:flex;gap:10px;align-items:flex-start;width:100%;margin:0;padding:12px 14px;border-radius:14px;background:#fff6f2;border:1px solid #efcfc9;text-align:left;font-size:13px;line-height:1.55;min-height:0}
 .notice-item span:first-child{font-size:18px;line-height:1.2;flex-shrink:0}
+
+/* ───────── 悄悄情書：按讚 ───────── */
+.letter-card{position:relative;display:flex;flex-direction:column;gap:14px;transition:transform .25s ease,box-shadow .25s ease}
+.letter-card.loved{background:repeating-linear-gradient(0deg,transparent 0 29px,#efc3c344 29px 30px),#fff3ee;border-color:#ecc0bd}
+.letter-open{all:unset;display:block;cursor:pointer;text-align:left;border-radius:6px}
+.letter-open:focus-visible{outline:2px solid #d4566e;outline-offset:4px}
+.letter-open h3{margin:15px 0 6px}
+.letter-open p{margin:0}
+.letter-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px dashed #e2cfaa}
+.letter-card.loved .letter-foot{border-top-color:#ecc0bd}
+.heart svg,.liked-note svg{width:18px;height:18px;flex-shrink:0}
+.heart{position:relative;display:inline-flex;align-items:center;gap:6px;margin:0;min-height:0;padding:7px 14px 7px 11px;border-radius:999px;background:#fffaf4;border:1.5px solid #e8b8b8;color:#c4566a;font-size:13px;font-weight:700;letter-spacing:.04em;box-shadow:0 2px 0 #f0d2cc;cursor:pointer;transition:background .2s,color .2s,border-color .2s,transform .15s}
+.heart svg path{fill:transparent;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;transition:fill .2s}
+.heart:hover{background:#fff0ef;transform:translateY(-1px)}
+.heart:active{transform:scale(.94)}
+.heart.on{background:linear-gradient(135deg,#e46a82,#cf4a66);border-color:#c8435f;color:#fff;box-shadow:0 3px 10px #d4566e55}
+.heart.on svg path{fill:#fff;stroke:#fff}
+.heart.big{padding:10px 20px 10px 16px;font-size:14px}
+.heart.big svg{width:22px;height:22px}
+.heart:disabled{opacity:1;cursor:wait}
+/* 按下去的瞬間：愛心跳一下，旁邊冒出小愛心 */
+.heart.burst svg{animation:heart-pop .5s cubic-bezier(.2,1.6,.4,1)}
+.heart.burst::before,.heart.burst::after{content:'♥';position:absolute;left:18px;top:50%;font-size:12px;color:#e46a82;pointer-events:none;animation:heart-fly .7s ease-out forwards}
+.heart.burst::after{left:26px;font-size:9px;animation-delay:.08s;--dx:14px}
+@keyframes heart-pop{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
+@keyframes heart-fly{0%{opacity:1;transform:translate(0,-50%) scale(.6)}100%{opacity:0;transform:translate(var(--dx,-10px),-34px) scale(1.2)}}
+.liked-note{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#b59a7a;letter-spacing:.04em}
+.liked-note svg path{fill:transparent;stroke:currentColor;stroke-width:1.8}
+.liked-note.on{color:#c4566a;font-weight:700}
+.liked-note.on svg path{fill:#d4566e;stroke:#d4566e}
+/* 被喜歡的信：角落蓋一枚蠟封 */
+.seal{position:absolute;top:-12px;right:16px;z-index:2;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ec8a9c,#c8435f 60%,#a9334d);color:#ffe9ec;font-size:18px;box-shadow:0 3px 6px #a9334d55,inset 0 -2px 3px #0002,inset 0 2px 2px #fff4;transform:rotate(12deg);animation:seal-in .45s cubic-bezier(.2,1.5,.4,1)}
+.seal::before{content:'';position:absolute;inset:4px;border-radius:50%;border:1.5px dashed #ffd3da88}
+@keyframes seal-in{0%{transform:rotate(-20deg) scale(0);opacity:0}100%{transform:rotate(12deg) scale(1);opacity:1}}
+.letter-modal-like{display:flex;justify-content:center;margin:4px 0 14px}
+@media (prefers-reduced-motion:reduce){.heart.burst svg,.heart.burst::before,.heart.burst::after,.seal{animation:none}}
